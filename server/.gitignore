@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Environment variables (含真实密钥、线上 CORS 白名单，禁止提交)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

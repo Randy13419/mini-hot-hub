@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* 设计 Token — 基于《文明 7》高级感深色主题 */
+:root {
+  /* 背景层级 */
+  --bg-base:       #0a0a0f;
+  --bg-card:       #12121a;
+  --bg-navbar:     #0e0e16;
+
+  /* 文字层级 */
+  --text-primary:  #e4e4e7;
+  --text-secondary:#71717a;
+  --text-muted:    #3f3f46;
+
+  /* 边框与分割线 */
+  --border-card:   #1e1e2a;
+  --border-hover:  #2e2e3e;
+
+  /* 呼吸灯动画 */
+  --glow-color:    #3b82f6;
+
+  /* 圆角 */
+  --radius-card:   12px;
+  --radius-item:   8px;
+}
+
+/* 全局基础样式 */
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 呼吸灯动画 */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* 热度条注入动画 */
+@keyframes grow-width {
+  from { width: 0; }
+  to { width: var(--hot-percent); }
+}
+
+.animate-grow {
+  animation: grow-width 0.8s ease-out forwards;
+}
+
+/* 卡片光晕追踪效果 */
+.card-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-glow::before {
+  content: "";
+  position: absolute;
+  top: var(--mouse-y, -100px);
+  left: var(--mouse-x, -100px);
+  width: 300px;
+  height: 300px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.12) 0%,
+    rgba(59, 130, 246, 0.04) 40%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.card-glow:hover::before {
+  opacity: 1;
+}
+
+/* 前三名排名徽章 */
+.rank-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #1c1917; }
+.rank-2 { background: linear-gradient(135deg, #cbd5e1, #94a3b8); color: #1e293b; }
+.rank-3 { background: linear-gradient(135deg, #d97706, #b45309); color: #fef3c7; }
+
+/* 链接 hover 左侧高亮条 */
+.hot-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 0;
+  border-radius: 1px;
+  background: #3b82f6;
+  transition: height 0.2s ease;
+}
+
+.hot-link:hover::before {
+  height: 60%;
+}
+
+/* 顶部加载进度条 */
+@keyframes loading-bar {
+  0%   { width: 0; }
+  50%  { width: 70%; }
+  100% { width: 100%; }
+}
+
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #3b82f6);
+  background-size: 200% 100%;
+  animation: loading-bar 1.5s ease-out forwards;
+  z-index: 9999;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .card-glow {
+    margin-bottom: 0;
+  }
+}

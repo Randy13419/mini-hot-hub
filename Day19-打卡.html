@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 19 打卡 · 准备部署 · 构建与环境变量就绪</title>
+  <style>
+    /* ===== 与 mini-hot-hub 统一的设计 Token ===== */
+    :root {
+      --bg-base:       #0a0a0f;
+      --bg-card:       #12121a;
+      --bg-navbar:     #0e0e16;
+      --text-primary:  #e4e4e7;
+      --text-secondary:#a1a1aa;
+      --text-muted:    #52525b;
+      --border-card:   #1e1e2a;
+      --blue:          #3b82f6;
+      --green:         #22c55e;
+      --red:           #ef4444;
+      --amber:         #f59e0b;
+      --purple:        #a78bfa;
+      --radius:        12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.7;
+    }
+
+    .container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    code.inline {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 12.5px;
+      color: var(--purple);
+    }
+
+    /* ===== Header ===== */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .header .badge {
+      display: inline-block;
+      padding: 5px 16px;
+      border-radius: 20px;
+      background: rgba(59,130,246,0.12);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .header .subtitle {
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    /* ===== Section ===== */
+    .section { margin-bottom: 40px; }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      padding-left: 12px;
+      border-left: 3px solid var(--blue);
+    }
+    .lead {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* ===== Terminal / Code ===== */
+    .terminal {
+      background: #000;
+      border: 1px solid var(--border-card);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 14px 0;
+    }
+    .terminal .term-bar {
+      background: #0e0e16;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .terminal .term-bar .dot {
+      width: 11px; height: 11px; border-radius: 50%;
+    }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .terminal .term-bar .title {
+      margin-left: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .terminal .term-body {
+      padding: 16px 18px;
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #a1a1aa;
+      overflow-x: auto;
+    }
+    .t-cmd   { color: #e4e4e7; }
+    .t-ok    { color: var(--green); }
+    .t-size  { color: #60a5fa; }
+    .t-dim   { color: var(--text-muted); }
+
+    .code-block {
+      background: #000;
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      color: #a1a1aa;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    .keyword { color: #c084fc; }
+    .string  { color: #34d399; }
+    .comment { color: #52525b; }
+    .added   { color: var(--green); }
+    .removed { color: var(--red); }
+
+    /* ===== Checklist ===== */
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      font-size: 14px;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .check-icon {
+      color: var(--green);
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ===== Tables ===== */
+    .table-wrap {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin: 14px 0;
+    }
+    .table-title {
+      padding: 12px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-card);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pill {
+      font-size: 11px;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .pill-blue { background: rgba(59,130,246,0.14); color: var(--blue); }
+    .pill-purple { background: rgba(167,139,250,0.14); color: var(--purple); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-card);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      background: var(--bg-navbar);
+    }
+    td .mono {
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      color: var(--blue);
+      font-size: 12.5px;
+    }
+    td .auto {
+      font-size: 11px;
+      color: var(--green);
+    }
+
+    /* ===== CORS demo ===== */
+    .cors-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 640px) { .cors-grid { grid-template-columns: 1fr; } }
+    .cors-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      padding: 18px;
+    }
+    .cors-box.allow { border-color: rgba(34,197,94,0.4); }
+    .cors-box.deny  { border-color: rgba(239,68,68,0.4); }
+    .cors-box .cors-head {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .cors-box.allow .cors-head { color: var(--green); }
+    .cors-box.deny  .cors-head { color: var(--red); }
+    .cors-box .cors-origin {
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+    .cors-box .cors-result {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .cors-box .cors-result .header-line {
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 11.5px;
+      display: block;
+      margin-top: 4px;
+    }
+
+    /* ===== Deploy flow ===== */
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    @media (max-width: 640px) { .flow { grid-template-columns: 1fr; } }
+    .flow-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+    }
+    .flow-step .step-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: rgba(59,130,246,0.14);
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .flow-step .step-platform {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .flow-step .step-detail {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .flow-step .step-detail .mono {
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      color: var(--purple);
+      font-size: 11.5px;
+    }
+
+    /* ===== Reflection ===== */
+    .reflection {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius);
+      padding: 24px;
+      font-size: 14px;
+      line-height: 1.9;
+      color: var(--text-secondary);
+    }
+    .reflection strong { color: var(--text-primary); }
+    .reflection p + p { margin-top: 12px; }
+
+    /* ===== Note box ===== */
+    .note {
+      background: rgba(59,130,246,0.07);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 14px 0;
+    }
+    .note.warn {
+      background: rgba(245,158,11,0.07);
+      border-color: rgba(245,158,11,0.3);
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border-card);
+      margin: 40px 0;
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="badge">📅 Day 19 · 缓冲日 1</div>
+      <h1>准备部署 · 构建与环境变量就绪</h1>
+      <p class="subtitle">生产构建通过，端口动态绑定，CORS 白名单就位 —— 项目达到「上云就绪」</p>
+    </div>
+
+    <!-- Step 1: 前端构建 -->
+    <div class="section">
+      <h2 class="section-title">Step 1：前端生产构建确认</h2>
+
+      <div class="terminal">
+        <div class="term-bar">
+          <span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span>
+          <span class="title">client — npm run build</span>
+        </div>
+        <div class="term-body">
+          <span class="t-cmd">&gt; client@0.0.0 build</span><br>
+          <span class="t-cmd">&gt; tsc -b &amp;&amp; vite build</span><br><br>
+          <span class="t-ok">✓ 24 modules transformed.</span><br>
+          <span class="t-dim">dist/index.html</span>                   <span class="t-size">0.49 kB</span> <span class="t-dim">│ gzip: 0.34 kB</span><br>
+          <span class="t-dim">dist/assets/index-BlvsEASi.css</span>   <span class="t-size">21.70 kB</span> <span class="t-dim">│ gzip: 5.01 kB</span><br>
+          <span class="t-dim">dist/assets/index-DNWg71qm.js</span>    <span class="t-size">198.61 kB</span> <span class="t-dim">│ gzip: 63.11 kB</span><br><br>
+          <span class="t-ok">✓ built in 155ms</span>
+        </div>
+      </div>
+
+      <p class="lead">
+        构建完全成功，无 TypeScript 错误、无 Vite 警告。<code class="inline">client/dist/</code> 就是明天托管给 Vercel 的<strong style="color:var(--text-primary)">全部资产</strong>：入口 <code class="inline">index.html</code> + 带 hash 的压缩 JS/CSS。
+      </p>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Step 2: 后端入口 -->
+    <div class="section">
+      <h2 class="section-title">Step 2：后端环境入口确认</h2>
+
+      <p class="lead">入口 <code class="inline">server/src/app.ts</code> 可由 <code class="inline">npm run start</code> 正常拉起。排查中发现端口<strong style="color:var(--text-primary)">硬编码隐患</strong>，已修复为动态绑定：</p>
+
+      <div class="code-block">
+        <span class="comment">// config.ts —— 后端端口</span><br>
+        <span class="removed">- export const PORT = 3001;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// ❌ 写死，云端无法注入</span></span><br>
+        <span class="added">+ export const PORT = Number(process.env.PORT) || 3001;&nbsp;&nbsp;<span class="comment">// ✅ 动态绑定</span></span>
+      </div>
+
+      <div class="note">
+        <strong style="color:var(--text-primary)">💡 为什么这是上云铁律：</strong>云平台不会让你自选端口，它通过 <code class="inline">process.env.PORT</code> 把端口「喂」给你的进程。写死 3001 → 平台健康检查连不上 → 部署失败。实测注入 <code class="inline">PORT=9876</code> 后服务正确监听在 9876。
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Step 3: 检查表 + 环境变量 -->
+    <div class="section">
+      <h2 class="section-title">Step 3：部署前检查表 &amp; 环境变量清单</h2>
+
+      <p class="lead">为防止明天跨域（CORS）报错或残留 <code class="inline">localhost</code> 硬编码，今天把两组关键变量<strong style="color:var(--text-primary)">真正落地到代码</strong>。</p>
+
+      <ul class="checklist">
+        <li><span class="check-icon">✅</span><span>前端生产构建通过，<code class="inline">dist/</code> 含 index.html + 压缩 JS/CSS</span></li>
+        <li><span class="check-icon">✅</span><span>后端可由 <code class="inline">npm run start</code> 拉起 Express</span></li>
+        <li><span class="check-icon">✅</span><span>后端端口动态绑定 <code class="inline">process.env.PORT</code>（已修复）</span></li>
+        <li><span class="check-icon">✅</span><span>后端 CORS 中间件就位，读取 <code class="inline">CLIENT_ORIGIN</code> 白名单</span></li>
+        <li><span class="check-icon">✅</span><span>前端读取 <code class="inline">VITE_API_BASE</code>，本地回退 <code class="inline">/api/v1</code></span></li>
+        <li><span class="check-icon">✅</span><span>无残留 <code class="inline">localhost</code> 硬编码到前端产物</span></li>
+        <li><span class="check-icon">✅</span><span><code class="inline">.env</code> 已被 gitignore，密钥不会误提交</span></li>
+      </ul>
+
+      <!-- 后端变量表 -->
+      <div class="table-wrap" style="margin-top:22px;">
+        <div class="table-title"><span class="pill pill-blue">后端 · Railway</span> 所需环境变量</div>
+        <table>
+          <thead><tr><th>变量</th><th>含义</th><th>本地默认</th><th>注入方</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="mono">PORT</span></td>
+              <td>后端监听端口</td>
+              <td>3001（回退）</td>
+              <td><span class="auto">Railway 自动</span></td>
+            </tr>
+            <tr>
+              <td><span class="mono">CLIENT_ORIGIN</span></td>
+              <td>线上前端域名，配置 CORS 白名单</td>
+              <td>*（允许所有）</td>
+              <td>手动</td>
+            </tr>
+            <tr>
+              <td><span class="mono">CACHE_TTL</span></td>
+              <td>缓存有效期（秒）</td>
+              <td>300（当前硬编码）</td>
+              <td>可选</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 前端变量表 -->
+      <div class="table-wrap">
+        <div class="table-title"><span class="pill pill-purple">前端 · Vercel</span> 所需环境变量</div>
+        <table>
+          <thead><tr><th>变量</th><th>含义</th><th>本地默认</th><th>注入方</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="mono">VITE_API_BASE</span></td>
+              <td>线上后端真实 API 基准地址</td>
+              <td>/api/v1（走 Vite 代理）</td>
+              <td>手动</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn">
+        ⚠️ 只有 <code class="inline">VITE_</code> 前缀的变量才会被打进前端产物，前缀写错变量就进不了代码。
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- CORS 实测 -->
+    <div class="section">
+      <h2 class="section-title">🔒 关键修复：函数式 CORS 白名单（已实测）</h2>
+
+      <p class="lead">排查发现后端<strong style="color:var(--text-primary)">原本完全没有 CORS</strong>——本地 Vite 代理把跨域问题掩盖了，一旦上 Vercel 必爆。安装 <code class="inline">cors</code> 后用函数式校验：</p>
+
+      <div class="cors-grid">
+        <div class="cors-box allow">
+          <div class="cors-head">✅ 白名单内来源 · 放行</div>
+          <div class="cors-origin">Origin: https://my-app.vercel.app</div>
+          <div class="cors-result">
+            响应头回显允许来源：
+            <span class="header-line" style="color:var(--green)">Access-Control-Allow-Origin: https://my-app.vercel.app</span>
+          </div>
+        </div>
+        <div class="cors-box deny">
+          <div class="cors-head">🚫 白名单外来源 · 拒绝</div>
+          <div class="cors-origin">Origin: https://evil-site.com</div>
+          <div class="cors-result">
+            服务端不下发 allow-origin 头，浏览器自动拦截。
+            <span class="header-line" style="color:var(--red)">（无 Access-Control-Allow-Origin）</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- 部署串联 -->
+    <div class="section">
+      <h2 class="section-title">🔗 上线当天的填值顺序</h2>
+      <p class="lead">前后端域名互为依赖，所以<strong style="color:var(--text-primary)">先各自上线拿域名，再互相回填</strong>：</p>
+
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-platform">先部署后端 · Railway</div>
+          <div class="step-detail">拿到后端域名<br><span class="mono">https://mini-hot-hub.up.railway.app</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-platform">部署前端 · Vercel</div>
+          <div class="step-detail">填<br><span class="mono">VITE_API_BASE</span><br>为后端地址 + <span class="mono">/api/v1</span></div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-platform">回后端补 CORS</div>
+          <div class="step-detail">填<br><span class="mono">CLIENT_ORIGIN</span><br>为 Vercel 前端域名</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Reflection -->
+    <div class="section">
+      <h2 class="section-title">💬 心得：从「本地能跑」到「上线能用」的鸿沟</h2>
+
+      <div class="reflection">
+        <p>
+          本地能跑 ≠ 上线能用。这二者之间隔着一道「环境」的鸿沟，今天做的全部准备工作，本质上都是在<strong>把代码里那些「只认本地环境」的假设，改造成「能适应任意环境」的契约</strong>。
+        </p>
+        <p>
+          最典型的是端口。本地写死 3001 天经地义，但云平台有自己的规矩——它给你一个端口，你得照着听。<code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">Number(process.env.PORT) || 3001</code> 这一行，就是把「我的代码」和「平台的环境」对接的接头。环境变量就是这份契约的具体条款：<code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">PORT</code>、<code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">CLIENT_ORIGIN</code>、<code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">VITE_API_BASE</code>，每一个都是本地与云端之间的一个「插槽」。
+        </p>
+        <p>
+          CORS 是另一堂深刻的课。本地开发时，Vite 的 <code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">server.proxy</code> 把 <code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">/api</code> 静默转发到 <code class="inline" style="background:#000;padding:2px 6px;border-radius:4px;">localhost:3001</code>，把跨域问题<strong>彻底藏起来了</strong>。可一旦前端搬 Vercel、后端搬 Railway，两个域名间的请求立刻被浏览器拦下。这次我特意把 CORS 写成函数式白名单并在服务端就拒绝非法来源——因为「防止非法调用」必须能被实测验证，而不是一句文档口号。
+        </p>
+        <p>
+          过程中还踩到一个真实的坑：Windows 上后台跑的测试服务，TaskStop 杀不掉 tsx 子进程，一个跑着<strong>旧代码</strong>的孤儿进程一直占着端口应答，差点让我误判「CORS 没生效」。这提醒我：验证服务端改动时，先确认端口真的释放、跑的真的是最新代码，否则测试结果会欺骗你。
+        </p>
+        <p>
+          18 天主路径让我把东西<strong>做出来</strong>，而 Day 19 让我明白：<strong>部署不是把代码丢上去那么简单，它要求代码从「在某一台机器上恰好能跑」进化到「在任何机器上都能跑」。</strong>明天，就是真正推上公网的时刻了。🚀
+        </p>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Day 19 · 准备部署 · 已就绪，等待 Day 20 公网上线
+    </div>
+
+  </div>
+</body>
+</html>
